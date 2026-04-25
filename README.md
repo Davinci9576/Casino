@@ -54,11 +54,12 @@ This separation ensures:
 
 ```bash
 g++ *.cpp -o poker
+```bash
+./poker
 ```
 ### Execute
 
-```bash
-./poker
+
 
 ## 📈 Future Improvements
 
