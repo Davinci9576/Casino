@@ -1,0 +1,785 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <ctime>
+#include <random>
+#include <cstdlib>
+#include <map>
+#include <fstream>
+using namespace std;
+
+struct Card{
+    int value;
+    int suit;
+};
+class Deck{
+    private:
+    vector <Card> cards;
+    public:
+    Deck(){
+        cardBuild();
+    }
+    void cardBuild(){
+        cards.clear();
+        for(int v=1; v<=13; v++){
+            for(int s=1; s<=4; s++){
+                cards.push_back({v, s});
+            }
+        }
+    }
+    void shuffleDeck(){
+    static random_device rd;
+    static mt19937 g(rd());
+    shuffle(cards.begin(), cards.end(), g);
+    }
+    Card dealCard(){
+        Card c=cards.back();
+        cards.pop_back();
+        return c;
+    }
+};
+class Player{
+    private:
+    vector<Card> hand;
+    string username;
+    string pass;
+    double balance;
+    int wins;
+    double winrate;
+    int losses;
+    double CurrentBet;
+    double TotalBet;
+    public:
+    Player(double startingBalance=1000){
+        balance=startingBalance;
+        wins=0;
+        losses=0;
+        winrate=0;
+        CurrentBet=0;
+        TotalBet=50;
+        username="";
+        pass="";
+    }
+    Player(string name, string password, double Balance=1000){
+        username=name;
+        pass=password;
+        balance=Balance;
+        wins=0;
+        winrate=0;
+        losses=0;
+        CurrentBet=0;
+        TotalBet=50;
+    }
+    void addCard(Card c){
+        hand.push_back(c);
+    }
+    void showHand(){
+        for(Card c: hand){
+            cout<<c.value<<" "<<c.suit<<endl;
+        }
+    }
+    void PerfectTie(){
+        balance+=TotalBet;
+    }
+    void clearHand(){
+        hand.clear();
+    }
+    void increaseBet(double extraBet){
+            CurrentBet+=extraBet;
+            balance-=extraBet;
+            TotalBet+=CurrentBet;
+    }
+    double getBalance(){
+        return balance;
+    }
+    void addBalance(){
+        balance+=(TotalBet*2);
+    }
+    void subtractBalance(){
+        balance-=50;
+    }
+    void addWins(){
+        wins++;
+    }
+    void addLosses(){
+        losses++;
+    }
+    void GetWinrate(){
+        if((wins+losses)==0){
+            winrate=0;
+        }else{
+            winrate=((double)wins/(wins+losses))*100;
+        }
+    }
+    void ResetCurrentBet(){
+        CurrentBet=0;
+    }
+    void ResetTotalBet(){
+        TotalBet=50;
+    }
+    void ShowStatus(string username){
+        cout<<"======="<<username<<"========"<<endl;
+        cout<<"Balance: "<<balance<<endl;
+        cout<<"Wins: "<<wins<<endl;
+        cout<<"Losses: "<<losses<<endl;
+        cout<<"Winrate: "<<winrate<<endl;
+    }
+    void gameOver(){
+        addLosses();
+    }
+    vector<Card> getHand(){
+        return hand;
+    }
+    void SaveToFile(){
+        ofstream file (username+".txt");
+        if(file.is_open()){
+            file<<balance<<endl;
+            file<<wins<<endl;
+            file<<losses<<endl;
+            file<<winrate<<endl;
+            file<<pass<<endl;
+        }
+    }
+    void LoadFromFile(){
+        ifstream file (username+".txt");
+        if(file.is_open()){
+        file>>balance;
+        file>>wins;
+        file>>losses;
+        file>>winrate;
+        file>>pass;
+        }
+    }
+    bool Password(string passwords){
+        if(pass==passwords){
+            return true;
+        }else {
+            return false;
+        }
+    }
+    void ranking(string username){
+        ofstream file("Ranking.txt", ios::app);
+        file<<username<<endl;
+    }
+    void LeaderBoard(int choice){
+        ifstream list ("Ranking.txt");
+        vector<string> users;
+        string name;
+        if(list.is_open()){
+                while(list>>name){
+                users.push_back(name);
+            }
+            list.close();
+        }
+        struct PlayerData{
+            double balance;
+            int wins;
+            int losses;
+            double winrate;
+            string username;
+        };
+        vector <PlayerData> leader;
+        PlayerData p;
+        for(auto &user: users){
+            ifstream file (user+".txt");
+            if(file.is_open()){
+                file>>p.balance;
+                file>>p.wins;
+                file>>p.losses;
+                file>>p.winrate;
+                p.username=user;
+                leader.push_back(p);
+                file.close();
+            }
+        }
+        if(choice==1){
+            sort(leader.begin(), leader.end(), [](PlayerData a, PlayerData b){
+                return a.balance>b.balance;
+            });
+            for(int i=0; i<leader.size(); i++){
+                cout<<i+1<<". "<<leader[i].username<<"->"<<leader[i].balance<<endl;
+            }
+        }else if(choice==2){
+            sort(leader.begin(), leader.end(), [] (PlayerData a, PlayerData b){
+                return a.wins>b.wins;
+            });
+            for(int i=0; i<leader.size(); i++){
+                cout<<i+1<<". "<<leader[i].username<<"->"<<leader[i].wins<<endl;
+            }
+        }else if(choice==3){
+            sort(leader.begin(), leader.end(), [](PlayerData a, PlayerData b){
+                return a.winrate>b.winrate;
+            });
+            for(int i=0; i<leader.size(); i++){
+                cout<<i+1<<". "<<leader[i].username<<"->"<<leader[i].winrate<<endl;
+            }
+        }else{
+            cout<<"Invalid input!"<<endl;
+            return;
+        }
+    }
+    void ChangeAccount(){
+        string account;
+        cout<<"Enter the username to change:"<<endl;
+        cin>>account;
+        ifstream file(account+".txt");
+        if(file.is_open()){
+            double prebalance;
+            int prewins;
+            int prelosses;
+            double prewinrate;
+            string prepass;
+            file>>prebalance;
+            file>>prewins;
+            file>>prelosses;
+            file>>prewinrate;
+            file>>prepass;
+            file.close();
+            string pass;
+            int i=0;
+            while(i<5){
+                cout<<"Enter the password:"<<endl;
+                cin>>pass;
+                if(pass==prepass){
+                    cout<<"Log in successful!"<<endl;
+                    balance=prebalance;
+                    wins=prewins;
+                    losses=prelosses;
+                    winrate=prewinrate;
+                    pass=prepass;
+                    username=account;
+                    return;
+                }else{
+                    cout<<"Wrong password!"<<endl;
+                    cout<<4-i<<" chance left!"<<endl;
+                }
+                i++;
+            }
+            cout<<"Ran out of chance to enter!"<<endl;
+            return;
+        }else{
+            cout<<"No account is registered under "<<account<<endl;
+            return;
+        }
+        
+    }
+
+};
+class HandEvaluator{
+    public:
+    struct HandResult{
+        int rank;
+        vector<int> values;
+    };
+    static HandResult evaluate(vector <Card> player, vector<Card> community){
+        vector <Card> all =player;
+        all.insert(all.end(), community.begin(), community.end());
+        sort(all.begin(), all.end(), [] (Card a, Card b){
+            return a.value>b.value;
+        });
+    
+    map <int, int> freq;
+    for(auto &c: all){
+        freq[c.value]++;
+    }
+    bool flush =isFlush(all);
+    bool straigth= isStraigth(all);
+    int pairs=0, three=0, four=0;
+    for(auto&f: freq){
+        if(f.second==2) pairs++;
+        else if(f.second==3) three++;
+        else if(f.second==4) four++;
+    }
+    HandResult result;
+    if (straigth && flush){
+        map <int, int> suits;
+        int i=-1;
+        for(auto &c: all){
+            suits[c.suit]++;
+            if(suits[c.suit]>=5){
+                i=c.suit;
+            }
+        }
+        if(i!=-1){
+        vector<int> vals;
+        for(auto &c: all){
+            if(find(vals.begin(), vals.end(), c.value)==vals.end() && c.suit==i){
+                vals.push_back(c.value);
+            }
+        }
+        sort(vals.begin(), vals.end(), [](int a, int b){
+            return a>b;
+        });
+        int countss=1;
+        int k=-1;
+        
+        for(size_t i=0; i+1<vals.size(); i++){
+            if(vals[i]==vals[i+1]+1){
+                countss++;
+                if(countss>=5){
+                    k=i;
+                    break;
+                }
+            }else{
+                countss=1;
+            }
+        }
+        if(k!=-1){
+        result.rank=9;
+        for(int i=k-4; i<=k; i++){
+            result.values.push_back(vals[i]);
+            if(result.values.size()>=5){
+                break;
+            }
+        }
+    }
+}
+    }else if(four){
+        result.rank=8;
+        int quad;
+        for(auto &f: freq){
+            if(f.second==4){
+                quad=f.first;
+                break;
+            }
+        }
+        result.values.push_back(quad);
+    }else if(three && pairs){
+        result.rank=7;
+        int triple;
+        for(auto &f: freq){
+            if(f.second==3){
+                triple=f.first;
+                break;
+            }
+        }
+        result.values.push_back(triple);
+    }else if(flush){
+        result.rank=6;
+        map<int, int> suits;
+        int i=0;
+        for(auto &c: all){
+            suits[c.suit]++;
+            if(suits[c.suit]>=5){
+                i=c.suit;
+                break;
+            }
+        }
+        for(auto &c: all){
+            if(i==c.suit){
+                result.values.push_back(c.value);
+                if(result.values.size()>=5){
+                    break;
+                }
+            }
+        }
+    }else if(straigth){
+        result.rank=5;
+        int count=1;
+        int k=-1;
+        vector<int> storage;
+        for(auto &c: all){
+            if(find(storage.begin(), storage.end(), c.value)==storage.end()){
+                storage.push_back(c.value);
+            }
+        }
+        sort(storage.begin(), storage.end(), [](int a, int b){
+            return a>b;
+        });
+        for(size_t i=0; i+1<storage.size(); i++){
+            if(storage[i]==storage[i+1]+1){
+                count++;
+                if(count>=5){
+                    k=i;
+                    break;
+                }
+            }else{
+                count=1;
+            }
+        }
+        result.values.clear();
+        if(k!=-1){
+        for(int i=k-4; i<=k; i++){
+            result.values.push_back(storage[i]);
+        }
+    }
+    }else if(three){
+        result.rank=4;
+        result.values.clear();
+        int tripleValue;
+        for(auto & f: freq){
+            if(f.second==3){
+                tripleValue=f.first;
+            }
+        }
+        result.values.push_back(tripleValue);
+        for(auto & c: all){
+            if(c.value!=tripleValue){
+                result.values.push_back(c.value);
+                if(result.values.size()==3){
+                    break;
+                }
+            }
+        }
+    }else if(pairs==2){ 
+        result.rank=3;
+        result.values.clear();
+        vector <int> pairValue;
+        int i=0;
+        for(auto &f: freq){
+            if(f.second==2){
+                pairValue.push_back(f.first);
+            }
+        }
+        sort(pairValue.begin(), pairValue.end(), [] (int a, int b){
+            return a>b;
+        });
+        for(int i=0; i<2; i++){
+            result.values.push_back(pairValue[i]);
+        }
+        for(auto &c: all){
+            if(c.value!=pairValue[0] && c.value!=pairValue[1]){
+                result.values.push_back(c.value);
+                break;
+            }
+        }
+    }else if(pairs==1){
+        result.rank=2;
+        result.values.clear();
+        int pairValue=0;
+        for(auto &f: freq){
+            if(f.second==2){
+                pairValue=f.first;
+            }
+        }
+        result.values.push_back(pairValue);
+        for(auto &c: all){
+            if(pairValue!=c.value){
+                result.values.push_back(c.value);
+            }
+            if(result.values.size()==4){
+                break;
+            }
+        }
+    }else{
+        result.rank=1;
+        for(auto& c: all){
+            result.values.push_back(c.value);
+            if(result.values.size()==5){
+                break;
+            }
+        }
+    }
+    return result;
+}
+    private:
+    static bool isFlush(vector <Card> cards){
+        map <int, int> suitCount;
+        for(auto &c: cards){
+            suitCount[c.suit]++;
+            if(suitCount[c.suit]>=5){
+                return true;
+            }
+        }
+        return false;
+    }
+   
+    static bool isStraigth(vector <Card> cards){
+        vector<int> vals;
+        for(auto &c: cards){
+            if(find(vals.begin(), vals.end(), c.value)==vals.end()){
+                vals.push_back(c.value);
+            }
+        }
+        sort(vals.begin(), vals.end());
+        int count=1;
+        for(int i=0; i<vals.size()-1; i++){
+            if(vals[i]==vals[i+1]-1){
+                count++;
+                if(count>=5){
+                    return true;
+                }
+            }else{
+                count=1;
+            }
+        }
+        return false;
+    }
+};
+class Game{
+    private:
+    Deck deck;
+    Player &player;
+    Player dealer;
+    vector<Card> communityCards;
+    public:
+    int choice;
+    Game(Player &p): player(p){}
+    void startRound(){
+        player.clearHand();
+        dealer.clearHand();
+        communityCards.clear();
+        deck.cardBuild();
+        deck.shuffleDeck();
+        cout<<"\n----HOLE CARDS----\n";
+        dealHoleCards();
+        player.showHand();
+        player.ResetTotalBet();
+        
+        if(!handAction()){
+            return;
+        }else{
+            cout<<"====Flop======"<<endl;
+            dealFlop();
+            showCommunity();
+            cout<<"Player cards:"<<endl;
+            player.showHand();
+        }
+        if(!handAction()){
+            return;
+        }else{
+            dealTurn();
+            cout<<"\n=====Turn=====\n";
+            showCommunity();
+            cout<<"Player cards:"<<endl;
+            player.showHand();
+        }
+        if(!handAction()){
+            return;
+        }else{
+            dealRiver();
+            cout<<"\n=====River=======\n";
+            showCommunity();
+            cout<<"Player cards:"<<endl;
+            player.showHand();
+        }
+        if(!handAction()){
+            return;
+        }
+        cout<<"\n=======SHOWDOWN ===========\n";
+        showTable();
+        auto playerResult=HandEvaluator::evaluate(player.getHand(), communityCards);
+        auto dealerResult=HandEvaluator::evaluate(dealer.getHand(), communityCards);
+        int result=CompareHands(playerResult, dealerResult);
+        player.subtractBalance();
+        if(result>0){
+            cout<<"Player won!"<<endl;
+            player.addBalance();
+            player.addWins();
+            player.GetWinrate();
+        }else if(result<0){
+            cout<<"Computer won!"<<endl;
+            player.addLosses();
+            player.GetWinrate();
+        }else{
+            cout<<"Perfect tie!"<<endl;
+            player.PerfectTie();
+        }
+    }
+
+        bool handAction(){
+        choice=playerAction();
+        if(choice==1){
+            return true;
+        }else if(choice==2){
+            player.ResetCurrentBet();
+            increaseBet();
+            return true;
+        }
+        else if(choice==3){
+            player.gameOver();
+            return false;
+        }else{
+            cout<<"Invalid input!"<<endl;
+            return false;
+        }
+    }
+    int CompareHands(const HandEvaluator::HandResult &a,const HandEvaluator::HandResult &b){
+        if(a.rank>b.rank){
+            return 1;
+        }else if(b.rank>a.rank){
+            return -1;
+        }
+        for(size_t i=0; i<a.values.size(); i++){
+            if(a.values[i]>b.values[i]){
+                return 1;
+            }else if(b.values[i]>a.values[i]){
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    void dealHoleCards(){
+        for(int i=0; i<2; i++){
+        player.addCard(deck.dealCard());
+        dealer.addCard(deck.dealCard());
+        }
+    }
+    void dealFlop(){
+        for(int i=0; i<3; i++){
+        communityCards.push_back(deck.dealCard());
+        }
+    }
+    void dealTurn(){
+        communityCards.push_back(deck.dealCard());
+    }
+    void dealRiver(){
+        communityCards.push_back(deck.dealCard());
+    }
+    void showCommunity(){
+        cout<<"\nCommunity Cards:\n";
+            for(Card cards: communityCards){
+                cout<<cards.value<<" "<<cards.suit<<endl;
+            }
+    }
+    void showTable(){
+        cout<<"Player cards:"<<endl;
+        player.showHand();
+        cout<<endl<<"Computer cards:"<<endl;
+        dealer.showHand();
+        cout<<"Community cards:"<<endl;
+        for(Card cards: communityCards){
+            cout<<cards.value<<" "<<cards.suit<<endl;
+        }
+    }
+    void increaseBet(){
+        double ExtraBet;
+        while(true){
+            cout<<"Enter the extra bet:"<<endl;
+            cin>>ExtraBet;
+            if(ExtraBet+50<=player.getBalance()){
+                break;
+            }
+            cout<<"Inssufficient balance please try again!"<<endl;
+        }
+        player.increaseBet(ExtraBet);
+    }
+    int playerAction(){
+        int choice;
+        cout<<"Choose your action:"<<endl;
+        cout<<"1. Check in"<<endl;
+        cout<<"2.Bet"<<endl;
+        cout<<"3.Fold"<<endl;
+        cout<<"Choice: ";
+        cin>>choice;
+        return choice;
+    }
+};
+class Casino{
+    private:
+    Player player;
+    Game game;
+    string Username;
+    public:
+    Casino() : player(), game(player){}
+        bool Authentication(){
+        int choice;
+        string answer;
+        string username;
+        cout<<"=======Welcome to the Casino!======="<<endl;
+        cout<<"Do you have an account? (Yes/No)"<<endl;
+        while(true){    
+            cin>>answer;
+            for(auto &c: answer){
+                c=tolower(c);
+            }
+        if(answer=="yes" || answer=="no"){
+            cout<<endl;
+           break;
+        }else{
+             cout<<"Invalid input try again."<<endl;
+            }
+        }
+        if(answer=="yes"){
+            cout<<"Enter the username:"<<endl;
+            cin>>username;
+            for(auto &c: username){
+                c=tolower(c);
+            }
+            ifstream file(username+".txt");
+            if(file.is_open()){
+            player=Player(username, "");
+            player.LoadFromFile();
+            string pass;
+            for(int i=0; i<5; i++){
+                cout<<"Enter the password: "<<endl;
+                cin>>pass;
+                bool result=player.Password(pass);
+                if(result){
+                    cout<<"Log in successful!"<<endl;
+                    Username=username;
+                    return true;
+                }else{
+                    cout<<"Wrong password! (You have "<<4-i<<"try(s) left"<<endl;
+                }
+            }
+            return false;
+        }else{
+            cout<<"No account exist under "<<username<<"!"<<endl;
+            return false;
+        }
+        }else{
+            string pass;
+            cout<<"Enter the username:"<<endl;
+            cin>>username;
+            Username=username;
+            cout<<"Enter the new password:"<<endl;
+            cin>>pass;
+            player=Player(username, pass);
+            player.ranking(username);
+            player.SaveToFile();
+            cout<<"Created a new account!"<<endl;
+            return true;
+        }
+    }
+    void PlayGame(){
+        game.startRound();
+    }
+    void start(){
+        bool value=Authentication();
+        if(!value){
+            return;
+        }
+        int answer;
+        while(true){
+        cout<<"=====Texas Poker!====="<<endl;
+        cout<<"Enter the choice:"<<endl;
+        cout<<"1. Play the game!"<<endl;
+        cout<<"2. Show status."<<endl;
+        cout<<"3. Leader Board!"<<endl;
+        cout<<"4. Change the account."<<endl;
+        cout<<"5. Exit the game."<<endl;
+        cin>>answer;
+        if(answer==1){
+            PlayGame();
+            player.SaveToFile();
+        }else if(answer==2){
+            player.ShowStatus(Username);
+        }else if(answer==3){
+            int choice;
+            cout<<"Select the ranking type:"<<endl;
+            cout<<"1. By Balance."<<endl;
+            cout<<"2. By Wins."<<endl;
+            cout<<"3. By Win Rate."<<endl;
+            cin>>choice;
+            player.LeaderBoard(choice);
+
+        }else if(answer==4){
+            player.SaveToFile();
+            player.ChangeAccount();
+        }else if(answer==5){
+            cout<<"GoodBye!"<<endl;
+            player.SaveToFile();
+            break;
+        }else{
+            cout<<"Invalid input!"<<endl;
+        }
+    }
+}
+};
+int main(){
+    Casino casino;
+    casino.start();
+    return 0;
+}
