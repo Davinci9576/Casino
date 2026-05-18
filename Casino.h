@@ -8,12 +8,14 @@ class Casino {
 private:
     Player player;
     Game game;
-    std::string Username;
 
 public:
     Casino();
-
+    void ShowPlayerStatus();
     bool Authentication();
+    void ChangeAccountUI();
     void PlayGame();
+    void ShowLeaderBoard();
     void start();
+    
 };

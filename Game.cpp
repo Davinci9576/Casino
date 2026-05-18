@@ -123,8 +123,9 @@ void Game::dealRiver() {
 
 void Game::showCommunity() {
     cout << "\nCommunity Cards:\n";
-    for (auto& c : communityCards) {
-        cout << c.value << " " << c.suit << endl;
+    for (const Card& c : communityCards) {
+
+        cout << c.toString()<<endl;
     }
 }
 
